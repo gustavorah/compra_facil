@@ -5,7 +5,13 @@ import { Tabs } from "expo-router";
 const TabsLayout = () => {
   return (
     <Tabs>
-      <Tabs.Screen name="carrinho" />
+      <Tabs.Screen
+        name="carrinho"
+        options={{
+          headerShown: false,
+          title: "Carrinho",
+        }}
+      />
     </Tabs>
   );
 };
