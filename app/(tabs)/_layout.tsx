@@ -4,12 +4,19 @@ import { Tabs } from "expo-router";
 
 const TabsLayout = () => {
   return (
-    <Tabs>
+    <Tabs screenOptions={{}}>
       <Tabs.Screen
         name="carrinho"
         options={{
           headerShown: false,
           title: "Carrinho",
+        }}
+      />
+      <Tabs.Screen
+        name="adicionar"
+        options={{
+          headerShown: false,
+          title: "Adicionar",
         }}
       />
     </Tabs>
