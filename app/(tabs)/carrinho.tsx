@@ -85,8 +85,16 @@ const Carrinho = () => {
         }
     };
 
-    const removeProduct = () => {
-        if (selectedItemId !== null) {
+    const removeProduct = async () => {
+        const productId = selectedItemId
+        if (selectedItemId !== null && productId) {
+            const response = await fetch(`http://179.190.66.110:3000/shopping-cart-products/${productId}`, {
+                method: 'DELETE', // Envia os dados do produto no corpo da requisição
+            });
+            if (!response.ok) {
+                console.log("ao buscar o produto");
+            }
+
             setCarrinho((prevCarrinho) =>
                 prevCarrinho.filter((item) => item.id !== selectedItemId)
             );
@@ -96,7 +104,7 @@ const Carrinho = () => {
 
     return (
         <>
-            <View className="flex-1 items-center justify-center">
+            <View className="flex-1 items-center justify-center mt-12">
                 {carrinho.length > 0 ? (
                     carrinho.map((item) => {
                         const produto = produtos[item.productId];

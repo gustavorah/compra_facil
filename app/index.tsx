@@ -9,7 +9,7 @@ const Button = styled(TouchableOpacity);
 export default function App() {
   return (
     <View className="flex-1 items-center justify-center bg-white">
-      <Text>Seu carrinho</Text>
+      <Text className="text-3xl">Seu carrinho</Text>
 
       <View className="w-40">
         <Button

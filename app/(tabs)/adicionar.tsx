@@ -107,18 +107,18 @@ const Adicionar = () => {
 
             <View className="flex-row justify-around items-center flex-1">
                 <View className="w-80 flex-row justify-between">
-                    <Button 
-                        className="bg-blue-500 w-40 p-10 rounded-lg"
-                        onPress={adicionarProduto}    
-                    >
-                        <Text className="text-white text-center">Adicionar</Text>
-                    </Button>
-
                     <Button
                         className="bg-blue-500 rounded-lg p-10"
                         onPress={selectProduct}
                     >
                         <Text className="text-white text-center">Selecionar</Text>
+                    </Button>
+
+                    <Button 
+                        className="bg-blue-500 w-40 p-10 rounded-lg"
+                        onPress={adicionarProduto}    
+                    >
+                        <Text className="text-white text-center">Adicionar</Text>
                     </Button>
                 </View>
             </View>
