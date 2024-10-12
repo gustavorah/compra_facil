@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { styled } from "nativewind";
 import { useFocusEffect } from "@react-navigation/native";
 
-const Button = styled(TouchableOpacity);
+// const Button = styled(TouchableOpacity);
 
 interface Product {
     id: number;
@@ -25,11 +25,13 @@ const Carrinho = () => {
     const [carrinho, setCarrinho] = useState<CarrinhoItem[]>([]);
     const [produtos, setProdutos] = useState<{[key: number]: Product}>({});
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+    const [touches, setTouches] = useState<number>(0);
+
     const refs = useRef<{ [key: number]: any }>({});
 
     const fetchCarrinho = async () => {
         try {
-            const response = await fetch('http://179.190.66.110:3000/shopping-cart-products');
+            const response = await fetch('http://192.168.0.28:3000/shopping-cart-products');
             if (!response.ok) {
                 throw new Error('Erro ao buscar produtos do carrinho');
             }
@@ -52,7 +54,7 @@ const Carrinho = () => {
     const fetchProduto = async (productId: number) => {
         try {
             console.log(productId);
-            const response = await fetch(`http://179.190.66.110:3000/products/${productId}`);
+            const response = await fetch(`http://192.168.0.28:3000/products/${productId}`);
             console.log(response);
             if (!response.ok) {
                 throw new Error("Erro ao buscar o produto");
@@ -88,7 +90,7 @@ const Carrinho = () => {
     const removeProduct = async () => {
         const productId = selectedItemId
         if (selectedItemId !== null && productId) {
-            const response = await fetch(`http://179.190.66.110:3000/shopping-cart-products/${productId}`, {
+            const response = await fetch(`http://192.168.0.28:3000/shopping-cart-products/${productId}`, {
                 method: 'DELETE', // Envia os dados do produto no corpo da requisição
             });
             if (!response.ok) {
@@ -102,51 +104,44 @@ const Carrinho = () => {
         }
     };
 
-    return (
-        <>
-            <View className="flex-1 items-center justify-center mt-12">
-                {carrinho.length > 0 ? (
-                    carrinho.map((item) => {
-                        const produto = produtos[item.productId];
-                        // console.log(produtos[item.productId]);
-                        return produto ? (
-                            <View
-                                ref={(el) => (refs.current[item.id] = el)}
-                                key={item.id}
-                                className={`border-solid border-2 m-2 w-40 rounded-lg pl-2 ${selectedItemId === item.id ? 'border-blue-500' : ''}`}
-                            >
-                                <Text>Produto: {produto.name}</Text>
-                                <Text>Preço: {produto.price}</Text>
-                                <Text>Quantidade: {item.quantity}</Text>
-                            </View>
-                        ) : (
-                            <Text key={item.id}>Carregando produto...</Text>
-                        );
-                    })
-                ) : (
-                    <Text>Carrinho Vazio</Text>
-                )}
-            </View>
+    const countTouches = () => {
+        const count_touches = touches + 1;
+        setTouches(count_touches)
+        console.log(touches);
+    }
 
-            {carrinho.length > 0 && (
-                <View className="flex-row justify-around items-center flex-1">
-                    <View className="w-80 flex-row justify-between">
-                        <Button
-                            className="bg-blue-500 rounded-lg p-10"
-                            onPress={selectProduct}
-                        >
-                            <Text className="text-white text-center">Selecionar</Text>
-                        </Button>
-                        <Button
-                            className="bg-blue-500 rounded-lg p-10"
-                            onPress={removeProduct}
-                        >
-                            <Text className="text-white text-center">Remover</Text>
-                        </Button>
-                    </View>
+    return (
+            <TouchableOpacity 
+                style={{ flex: 1}}
+                activeOpacity={1}
+                onPress={countTouches}>
+
+                <View className="flex-1 items-center justify-center mt-12">
+                    {carrinho.length > 0 ? (
+                        carrinho.map((item) => {
+                            const produto = produtos[item.productId];
+                            // console.log(produtos[item.productId]);
+                            return produto ? (
+                                <View
+                                    ref={(el) => (refs.current[item.id] = el)}
+                                    key={item.id}
+                                    className={`border-solid border-2 m-2 w-40 rounded-lg pl-2 ${selectedItemId === item.id ? 'border-blue-500' : ''}`}
+                                >
+                                    <Text>Produto: {produto.name}</Text>
+                                    <Text>Preço: {produto.price}</Text>
+                                    <Text>Quantidade: {item.quantity}</Text>
+                                </View>
+                            ) : (
+                                <Text key={item.id}>Carregando produto...</Text>
+                            );
+                        })
+                    ) : (
+                        <Text className="text-6xl">Carrinho Vazio</Text>
+                    )}
                 </View>
-            )}
-        </>
+
+                
+            </TouchableOpacity>
     );
 };
 

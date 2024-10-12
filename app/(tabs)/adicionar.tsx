@@ -50,7 +50,7 @@ const Adicionar = () => {
 
     const adicionarProdutoAoCarrinho = async (produto: { quantity: number, productId: number, shoppingCartId: number }) => {
         try {
-            const response = await fetch('http://179.190.66.110:3000/shopping-cart-products', {
+            const response = await fetch('http://192.168.0.28:3000/shopping-cart-products', {
                 method: 'POST', // Método POST para enviar dados
                 headers: {
                     'Content-Type': 'application/json', // Define o tipo de conteúdo como JSON

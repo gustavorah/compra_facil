@@ -9,11 +9,10 @@ const Button = styled(TouchableOpacity);
 export default function App() {
   return (
     <View className="flex-1 items-center justify-center bg-white">
-      <Text className="text-3xl">Seu carrinho</Text>
 
-      <View className="w-40">
+      <View className="w-full">
         <Button
-          className="bg-blue-500 p-4 rounded-lg"
+          className="bg-blue-500 h-full p-4 rounded-lg"
           onPress={() => {
             router.push("/carrinho");
           }}
