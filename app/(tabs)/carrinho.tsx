@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity } from "react-native";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { styled } from "nativewind";
 import { useFocusEffect } from "@react-navigation/native";
+import * as Speak from "expo-speech";
 
 // const Button = styled(TouchableOpacity);
 
@@ -26,7 +27,9 @@ const Carrinho = () => {
     const [produtos, setProdutos] = useState<{[key: number]: Product}>({});
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
     const [touches, setTouches] = useState<number>(0);
+    const [timer, setTimer] = useState<boolean | null>(null);
 
+    const touchesRef = useRef(touches);
     const refs = useRef<{ [key: number]: any }>({});
 
     const fetchCarrinho = async () => {
@@ -77,13 +80,21 @@ const Carrinho = () => {
         }, [])
     );
 
-    const selectProduct = () => {
-        if (selectedItemId === null && carrinho.length > 0) {
-            setSelectedItemId(carrinho[0]?.id || null);
-        } else {
-            const currentIndex = carrinho.findIndex((item) => item.id === selectedItemId);
-            const nextIndex = (currentIndex + 1) % carrinho.length;
-            setSelectedItemId(carrinho[nextIndex].id);
+    const selectProduct = async () => {
+        if (carrinho.length <= 0) {
+            const speechStatus = await Speak.isSpeakingAsync();
+            if (! speechStatus) {
+                Speak.speak('Sem produtos no carrinho', {language: 'pt-br'});
+            }
+        }
+        else {
+            if (selectedItemId === null && carrinho.length > 0) {
+                setSelectedItemId(carrinho[0]?.id || null);
+            } else {
+                const currentIndex = carrinho.findIndex((item) => item.id === selectedItemId);
+                const nextIndex = (currentIndex + 1) % carrinho.length;
+                setSelectedItemId(carrinho[nextIndex].id);
+            }
         }
     };
 
@@ -104,11 +115,57 @@ const Carrinho = () => {
         }
     };
 
+    useEffect(() => {
+        touchesRef.current = touches;
+    }, [touches])
+
+    // Efeito para lidar com mudanças no valor do timer
+    useEffect(() => {
+        if (timer === true) {
+            // Inicia o temporizador de 5 segundos
+            console.log('iniciando temporizador');
+            
+            const timeout = setTimeout(() => {
+                console.log('fim temporizador');
+                
+                setTimer(false);
+                
+                const touchesDone = touchesRef.current;
+                switch (touchesDone) {
+                    
+                    case 1:
+                        selectProduct();
+                        break;
+                    case 2:
+                        Speak.speak('teste');
+                    default:
+                        Speak.speak(`Comando não reconhecido. 1 toque: Seleciona o primeiro ou próximo carrinho; 
+                            2 toques: Deleta o produto do carrinho;
+                            3 toques: Descreve os produtos do carrinho`, {language: 'pt-br'});
+                        break;
+                }
+                setTouches(0);
+            }, 2000);
+
+            // Limpeza caso o componente seja desmontado antes dos 5 segundos
+            return () => clearTimeout(timeout);
+        }
+    }, [timer]); // O efeito roda quando o `timer` muda
+
+    const startTimer = () => {
+        setTimer(true);
+    };
+
     const countTouches = () => {
-        const count_touches = touches + 1;
-        setTouches(count_touches)
-        console.log(touches);
-    }
+        if (!timer) {
+            startTimer();
+        }
+
+        // Incrementa a quantidade de toques
+        setTouches(prevTouches => prevTouches + 1);
+
+        console.log(`Toques: ${touches + 1}`);
+    };
 
     return (
             <TouchableOpacity 

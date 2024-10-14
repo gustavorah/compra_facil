@@ -2,7 +2,7 @@ import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React from "react";
 import { Text, View, TouchableOpacity } from "react-native";
-import { styled } from "nativewind";
+import { styled } from "nativewind"; 
 
 const Button = styled(TouchableOpacity);
 
@@ -12,12 +12,14 @@ export default function App() {
 
       <View className="w-full">
         <Button
-          className="bg-blue-500 h-full p-4 rounded-lg"
+          className="bg-blue-500 h-full p-4 flex items-center justify-center"
           onPress={() => {
             router.push("/carrinho");
           }}
         >
-          <Text className="text-white text-center">Iniciar</Text>
+          <Text className="text-white text-center text-5xl">Iniciar</Text>
+
+          
         </Button>
       </View>
     </View>

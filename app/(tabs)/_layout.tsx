@@ -16,14 +16,6 @@ const TabsLayout = () => {
           tabBarIcon: ({ color }) => <FontAwesome size={28} name="shopping-cart" color={color} />,
         }}
       />
-      <Tabs.Screen
-        name="adicionar"
-        options={{
-          headerShown: false,
-          title: "Adicionar",
-          tabBarIcon: ({ color }) => <FontAwesome size={28} name="plus" color={color} />,
-        }}
-      />
     </Tabs>
   );
 };
