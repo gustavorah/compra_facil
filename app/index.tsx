@@ -7,6 +7,7 @@ import { styled } from "nativewind";
 const Button = styled(TouchableOpacity);
 
 export default function App() {
+
   return (
     <View className="flex-1 items-center justify-center bg-white">
 
@@ -19,7 +20,7 @@ export default function App() {
         >
           <Text className="text-white text-center text-5xl">Iniciar</Text>
 
-          
+
         </Button>
       </View>
     </View>

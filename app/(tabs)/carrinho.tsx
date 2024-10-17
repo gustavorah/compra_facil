@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { styled } from "nativewind";
 import { useFocusEffect } from "@react-navigation/native";
 import * as Speak from "expo-speech";
+import { LandPlot } from "lucide-react";
 
 // const Button = styled(TouchableOpacity);
 
@@ -34,7 +35,7 @@ const Carrinho = () => {
 
     const fetchCarrinho = async () => {
         try {
-            const response = await fetch('http://192.168.0.28:3000/shopping-cart-products');
+            const response = await fetch('http://192.168.0.104:3000/shopping-cart-products');
             if (!response.ok) {
                 throw new Error('Erro ao buscar produtos do carrinho');
             }
@@ -56,9 +57,8 @@ const Carrinho = () => {
     
     const fetchProduto = async (productId: number) => {
         try {
-            console.log(productId);
-            const response = await fetch(`http://192.168.0.28:3000/products/${productId}`);
-            console.log(response);
+            const response = await fetch(`http://192.168.0.104:3000/products/${productId}`);
+
             if (!response.ok) {
                 throw new Error("Erro ao buscar o produto");
             }
@@ -80,7 +80,7 @@ const Carrinho = () => {
         }, [])
     );
 
-    const selectProduct = async () => {
+    const selectProduct = async () => {        
         if (carrinho.length <= 0) {
             const speechStatus = await Speak.isSpeakingAsync();
             if (! speechStatus) {
@@ -90,18 +90,35 @@ const Carrinho = () => {
         else {
             if (selectedItemId === null && carrinho.length > 0) {
                 setSelectedItemId(carrinho[0]?.id || null);
-            } else {
+                if (selectedItemId)
+                {
+                    speakSelectedProduct(produtos[carrinho[0].productId]);
+                }
+            } 
+            else {
                 const currentIndex = carrinho.findIndex((item) => item.id === selectedItemId);
                 const nextIndex = (currentIndex + 1) % carrinho.length;
                 setSelectedItemId(carrinho[nextIndex].id);
+
+                if (selectedItemId)
+                {
+                    speakSelectedProduct(produtos[carrinho[nextIndex].productId]);
+                }
             }
         }
     };
 
+    const speakSelectedProduct = async (product: Product) => {
+        const speechStatus = await Speak.isSpeakingAsync();
+        if (! speechStatus) {
+            Speak.speak(`Produto selecionado: ${product.name}, com valor de ${product.price} reais`, {language: 'pt-br'});
+        }
+    }
+
     const removeProduct = async () => {
         const productId = selectedItemId
         if (selectedItemId !== null && productId) {
-            const response = await fetch(`http://192.168.0.28:3000/shopping-cart-products/${productId}`, {
+            const response = await fetch(`http://192.168.0.104:3000/shopping-cart-products/${productId}`, {
                 method: 'DELETE', // Envia os dados do produto no corpo da requisição
             });
             if (!response.ok) {
@@ -114,6 +131,10 @@ const Carrinho = () => {
             setSelectedItemId(null);
         }
     };
+
+    const addProduct = async () => {
+        await speakSelectedProduct(produtos[0]);
+    }
 
     useEffect(() => {
         touchesRef.current = touches;
@@ -137,11 +158,15 @@ const Carrinho = () => {
                         selectProduct();
                         break;
                     case 2:
-                        Speak.speak('teste');
+                        addProduct();
+                        break;
+                    case 3:
+                        Speak.speak('Deletar produto', {language: 'pt-br'});
+                        break;
                     default:
                         Speak.speak(`Comando não reconhecido. 1 toque: Seleciona o primeiro ou próximo carrinho; 
                             2 toques: Deleta o produto do carrinho;
-                            3 toques: Descreve os produtos do carrinho`, {language: 'pt-br'});
+                            3 toques: Descreve os produtos do carrinho`, {language: 'pt-br', rate: 2.0});
                         break;
                 }
                 setTouches(0);
