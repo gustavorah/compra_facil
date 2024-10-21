@@ -1,0 +1,23 @@
+services:
+  compra_facil:
+    build:
+      context: .
+      args:
+        - NODE_ENV=development
+    environment:
+      - NODE_ENV=development
+      - IP=${IP}
+    tty: true
+    ports:
+      - '19006:19006'
+      - '19002:19002'
+      - '19001:19001'
+      - '19000:19000'
+      - '8081:8081'
+    volumes:
+      - .:/opt/compra_facil/app:delegated
+      - notused:/opt/compra_facil/app/node_modules
+    healthcheck:
+      disable: true
+volumes:
+  notused:
