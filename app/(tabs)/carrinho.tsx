@@ -25,7 +25,7 @@ interface CarrinhoItem {
 
 const Carrinho = () => {
     const [carrinho, setCarrinho] = useState<CarrinhoItem[]>([]);
-    const [produtos, setProdutos] = useState<{[key: number]: Product}>({});
+    const [produtos, setProdutos] = useState<Product[]>([]);
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
     const [touches, setTouches] = useState<number>(0);
     const [timer, setTimer] = useState<boolean | null>(null);
@@ -35,7 +35,7 @@ const Carrinho = () => {
 
     const fetchCarrinho = async () => {
         try {
-            const response = await fetch('http://192.168.0.104:3000/shopping-cart-products');
+            const response = await fetch('http://192.168.0.105:3000/shopping-cart-products');
             if (!response.ok) {
                 throw new Error('Erro ao buscar produtos do carrinho');
             }
@@ -57,7 +57,7 @@ const Carrinho = () => {
     
     const fetchProduto = async (productId: number) => {
         try {
-            const response = await fetch(`http://192.168.0.104:3000/products/${productId}`);
+            const response = await fetch(`http://192.168.0.105:3000/products/${productId}`);
 
             if (!response.ok) {
                 throw new Error("Erro ao buscar o produto");
@@ -118,7 +118,7 @@ const Carrinho = () => {
     const removeProduct = async () => {
         const productId = selectedItemId
         if (selectedItemId !== null && productId) {
-            const response = await fetch(`http://192.168.0.104:3000/shopping-cart-products/${productId}`, {
+            const response = await fetch(`http://192.168.0.105:3000/shopping-cart-products/${productId}`, {
                 method: 'DELETE', // Envia os dados do produto no corpo da requisição
             });
             if (!response.ok) {
@@ -129,6 +129,8 @@ const Carrinho = () => {
                 prevCarrinho.filter((item) => item.id !== selectedItemId)
             );
             setSelectedItemId(null);
+
+            Speak.speak('Produto deletado', {language: 'pt-br'});
         }
     };
 
@@ -158,10 +160,11 @@ const Carrinho = () => {
                         selectProduct();
                         break;
                     case 2:
-                        addProduct();
+                        removeProduct();
+                        // addProduct();
                         break;
                     case 3:
-                        Speak.speak('Deletar produto', {language: 'pt-br'});
+                        listarCarrinho();
                         break;
                     default:
                         Speak.speak(`Comando não reconhecido. 1 toque: Seleciona o primeiro ou próximo carrinho; 
@@ -191,6 +194,20 @@ const Carrinho = () => {
 
         console.log(`Toques: ${touches + 1}`);
     };
+
+    const listarCarrinho = () => {
+        speak("Produtos no seu carrinho");
+        
+        const produtosArray = Object.values(produtos);
+        produtosArray.forEach((item, index) => {
+            index++;   
+            speak(`Produto ${index}: ${item.name}`);
+        });
+    }
+
+    const speak = (text: string) => {
+        Speak.speak(text, {language: 'pt-br'});
+    }
 
     return (
             <TouchableOpacity 
