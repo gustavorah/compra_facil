@@ -1,9 +1,8 @@
 import { View, Text, TouchableOpacity } from "react-native";
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { styled } from "nativewind";
 import { useFocusEffect } from "@react-navigation/native";
 import * as Speak from "expo-speech";
-import { LandPlot } from "lucide-react";
+import NfcManager, {NfcEvents, NfcTech} from "react-native-nfc-manager";
 
 // const Button = styled(TouchableOpacity);
 
@@ -29,9 +28,20 @@ const Carrinho = () => {
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
     const [touches, setTouches] = useState<number>(0);
     const [timer, setTimer] = useState<boolean | null>(null);
+    const [nfcReader, setNfcReader] = useState<boolean>(false);
 
     const touchesRef = useRef(touches);
     const refs = useRef<{ [key: number]: any }>({});
+
+    // start listening to tag
+    NfcManager.start();
+
+    NfcManager.setEventListener(NfcEvents.DiscoverTag, (tag: any) => {
+        console.log("Tag discovered", tag);
+        // fetch produto
+
+        // open new page
+    })
 
     const fetchCarrinho = async () => {
         try {
@@ -140,7 +150,7 @@ const Carrinho = () => {
 
     useEffect(() => {
         touchesRef.current = touches;
-    }, [touches])
+    }, [touches]);
 
     // Efeito para lidar com mudanças no valor do timer
     useEffect(() => {
