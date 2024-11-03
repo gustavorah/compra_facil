@@ -33,19 +33,40 @@ const Carrinho = () => {
     const touchesRef = useRef(touches);
     const refs = useRef<{ [key: number]: any }>({});
 
-    // start listening to tag
-    NfcManager.start();
+   // Inicializa o NFC
+   useEffect(() => {
+        async function initNfc() {
+            try {
+                await NfcManager.start();
+                console.log("NFC Manager iniciado com sucesso.");
+            } catch (error) {
+                console.error("Erro ao iniciar o NFC Manager:", error);
+            }
+        }
+        initNfc();
 
-    NfcManager.setEventListener(NfcEvents.DiscoverTag, (tag: any) => {
-        console.log("Tag discovered", tag);
-        // fetch produto
+        // Adiciona o listener de evento de descoberta de tag NFC
+        const onTagDiscovered = (tag: any) => {
+            if (tag) {
+                console.log("Tag descoberta:", tag);
+                // Aqui você pode buscar o produto ou abrir uma nova página
+            } else {
+                console.log("Nenhuma tag NFC detectada.");
+            }
+        };
+        
+        NfcManager.setEventListener(NfcEvents.DiscoverTag, onTagDiscovered);
 
-        // open new page
-    })
+        // Limpa o listener de eventos ao desmontar o componente
+        return () => {
+            NfcManager.setEventListener(NfcEvents.DiscoverTag, null);
+        };
+    }, []);
 
     const fetchCarrinho = async () => {
         try {
-            const response = await fetch('http://192.168.0.105:3000/shopping-cart-products');
+            const response = await fetch('http://192.168.0.28:3000/shopping-cart-products');
+            
             if (!response.ok) {
                 throw new Error('Erro ao buscar produtos do carrinho');
             }
@@ -67,7 +88,7 @@ const Carrinho = () => {
     
     const fetchProduto = async (productId: number) => {
         try {
-            const response = await fetch(`http://192.168.0.105:3000/products/${productId}`);
+            const response = await fetch(`http://192.168.0.28:3000/products/${productId}`);
 
             if (!response.ok) {
                 throw new Error("Erro ao buscar o produto");
@@ -128,7 +149,7 @@ const Carrinho = () => {
     const removeProduct = async () => {
         const productId = selectedItemId
         if (selectedItemId !== null && productId) {
-            const response = await fetch(`http://192.168.0.105:3000/shopping-cart-products/${productId}`, {
+            const response = await fetch(`http://192.168.0.28:3000/shopping-cart-products/${productId}`, {
                 method: 'DELETE', // Envia os dados do produto no corpo da requisição
             });
             if (!response.ok) {
