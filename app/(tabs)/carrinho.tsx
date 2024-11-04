@@ -40,32 +40,37 @@ const Carrinho = () => {
             try {
                 await NfcManager.start();
                 console.log("NFC Manager iniciado com sucesso.");
-                // setAdicionar(true);
+                NfcManager.setEventListener(NfcEvents.DiscoverTag, onTagDiscovered);
             } catch (error) {
                 console.error("Erro ao iniciar o NFC Manager:", error);
             }
         }
-        initNfc();
 
-        // Adiciona o listener de evento de descoberta de tag NFC
+        // Função de callback para quando uma tag NFC é descoberta
         const onTagDiscovered = (tag: any) => {
             if (tag) {
                 console.log("Tag descoberta:", tag);
                 setAdicionar(true);
-                setProductId(tag.productId);
+                // setProductId(tag.productId);
+                
+                // Função de voz descrevendo os toques
                 speak(`1 toque: descreve o produto.
-                       2 toques: adiciona o produto para o carrinho.
-                       3 toques: não adiciona o produto.`)
+                    2 toques: adiciona o produto para o carrinho.
+                    3 toques: não adiciona o produto.`);
+                
+                // Desativa o modo de leitura logo após a detecção
+                NfcManager.setEventListener(NfcEvents.DiscoverTag, null);
             } else {
                 console.log("Nenhuma tag NFC detectada.");
             }
         };
-        
-        NfcManager.setEventListener(NfcEvents.DiscoverTag, onTagDiscovered);
 
-        // Limpa o listener de eventos ao desmontar o componente
+        initNfc();
+
+        // Limpa o listener ao desmontar o componente
         return () => {
             NfcManager.setEventListener(NfcEvents.DiscoverTag, null);
+            // NfcManager.stop();  // Opcionalmente, desative o NFC Manager ao sair do componente
         };
     }, []);
 
