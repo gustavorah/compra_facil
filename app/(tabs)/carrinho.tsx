@@ -30,6 +30,7 @@ const Carrinho = () => {
     const [timer, setTimer] = useState<boolean | null>(null);
     const [adicionar, setAdicionar] = useState<boolean>(false);
     const [productId, setProductId] = useState<number | null>(null);
+    const [productTag, setProductTag] = useState<{name: string, price: number} | null>(null);
 
     const touchesRef = useRef(touches);
     const refs = useRef<{ [key: number]: any }>({});
@@ -47,14 +48,17 @@ const Carrinho = () => {
         }
 
         // Função de callback para quando uma tag NFC é descoberta
-        const onTagDiscovered = (tag: any) => {
+        const onTagDiscovered = async (tag: any) => {
             if (tag) {
+                await fetchProdutoByTag(tag);
                 console.log("Tag descoberta:", tag);
                 setAdicionar(true);
                 // setProductId(tag.productId);
+
+                speak(`Produto encontrado: ${tag.name}, com valor de ${tag.price} reais`);
                 
                 // Função de voz descrevendo os toques
-                speak(`1 toque: descreve o produto.
+                Speak.speak(`1 toque: descreve o produto.
                     2 toques: adiciona o produto para o carrinho.
                     3 toques: não adiciona o produto.`);
                 
@@ -96,6 +100,26 @@ const Carrinho = () => {
             alert("Não foi possível carregar os itens do carrinho. Verifique sua conexão ou tente novamente mais tarde.");
         }
     };
+
+    const fetchProdutoByTag = async (tag: any) => {
+        try {
+            const response = await fetch(`http://192.168.0.28:3000/tags/${tag}/products`);
+            if (!response.ok) {
+                throw new Error("Erro ao buscar o produto");
+            }
+
+            const data: {name: string, price: number} = await response.json();
+            if (!data) {
+                throw new Error('Dados do produto não encontrados');
+            }
+
+            setProductTag(data);
+
+        }
+        catch (error: any) {
+            console.error("Erro ao buscar o produto:", error.message);
+        }
+    }
     
     const fetchProduto = async (productId: number) => {
         try {
