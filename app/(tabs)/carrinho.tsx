@@ -2,7 +2,7 @@ import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import * as Speak from "expo-speech";
-import NfcManager, {NfcEvents, NfcTech} from "react-native-nfc-manager";
+import NfcManager, {Ndef, NfcEvents, NfcTech} from "react-native-nfc-manager";
 
 // const Button = styled(TouchableOpacity);
 
@@ -40,6 +40,8 @@ const Carrinho = () => {
         async function initNfc() {
             try {
                 await NfcManager.start();
+
+                await NfcManager.requestTechnology(NfcTech.Ndef);
                 console.log("NFC Manager iniciado com sucesso.");
                 NfcManager.setEventListener(NfcEvents.DiscoverTag, onTagDiscovered);
             } catch (error) {
@@ -50,7 +52,8 @@ const Carrinho = () => {
         // Função de callback para quando uma tag NFC é descoberta
         const onTagDiscovered = async (tag: any) => {
             if (tag) {
-                await fetchProdutoByTag(tag);
+                const text = Ndef.text.decodePayload(tag.ndefMessage[0].payload);
+                await fetchProdutoByTag(text);
                 console.log("Tag descoberta:", tag);
                 setAdicionar(true);
                 // setProductId(tag.productId);
