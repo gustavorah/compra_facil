@@ -106,12 +106,17 @@ const Carrinho = () => {
             const text = Ndef.text.decodePayload(ndefMessage.payload);
             console.log("Decoded tag content:", text);
 
-            await fetchProdutoByTag(text);
+            const data = await fetchProdutoByTag(text);
+            console.log('produto:');
+            console.log(data);
             setAdicionar(true);
-            speak(`Produto encontrado: ${productTag?.name || 'desconhecido'}, com valor de ${productTag?.price || 0} reais`);
+            speak(`Produto encontrado: ${data?.name || 'desconhecido'}, com valor de ${data?.price || 0} reais`);
         } catch (error) {
             readNdefTag();
             console.error("Error processing NFC tag:", error);
+        }
+        finally {
+            await readNdefTag();
         }
     };
 
@@ -128,7 +133,7 @@ const Carrinho = () => {
 
     const fetchCarrinho = async () => {
         try {
-            const response = await fetch('http://192.168.0.105:3000/shopping-cart-products');
+            const response = await fetch('http://192.168.73.203:3000/shopping-cart-products');
             
             if (!response.ok) {
                 throw new Error('Erro ao buscar produtos do carrinho');
@@ -138,8 +143,9 @@ const Carrinho = () => {
             if (!data) {
                 throw new Error('Dados do carrinho não encontrados');
             }
-    
+                        
             setCarrinho(data);
+            
             data.forEach(async (item) => {
                 await fetchProduto(item.productId);
             });
@@ -151,12 +157,14 @@ const Carrinho = () => {
 
     const fetchProdutoByTag = async (tag: any) => {
         try {
-            const response = await fetch(`http://192.168.0.105:3000/tags/${tag}/products`);
+            const response = await fetch(`http://192.168.73.203:3000/tags/${tag}/products`);
+            
             if (!response.ok) {
                 throw new Error("Erro ao buscar o produto");
             }
 
             const data: {id: number, name: string, price: number} = await response.json();
+
             if (!data) {
                 throw new Error('Dados do produto não encontrados');
             }
@@ -164,6 +172,7 @@ const Carrinho = () => {
             setProductTag(data);
             setProductId(data.id)
 
+            return data;
         }
         catch (error: any) {
             readNdefTag();
@@ -173,7 +182,7 @@ const Carrinho = () => {
     
     const fetchProduto = async (productId: number) => {
         try {
-            const response = await fetch(`http://192.168.0.105:3000/products/${productId}`);
+            const response = await fetch(`http://192.168.73.203:3000/products/${productId}`);
 
             if (!response.ok) {
                 throw new Error("Erro ao buscar o produto");
@@ -205,6 +214,10 @@ const Carrinho = () => {
         }
         else {
             if (selectedItemId === null && carrinho.length > 0) {
+                if (selectedItemId === null)
+                {
+                    speakSelectedProduct(produtos[carrinho[0].productId]);
+                }
                 setSelectedItemId(carrinho[0]?.id || null);
                 if (selectedItemId)
                 {
@@ -234,7 +247,7 @@ const Carrinho = () => {
     const removeProduct = async () => {
         const productId = selectedItemId
         if (selectedItemId !== null && productId) {
-            const response = await fetch(`http://192.168.0.105:3000/shopping-cart-products/${productId}`, {
+            const response = await fetch(`http://192.168.73.203:3000/shopping-cart-products/${productId}`, {
                 method: 'DELETE', // Envia os dados do produto no corpo da requisição
             });
             if (!response.ok) {
@@ -247,6 +260,8 @@ const Carrinho = () => {
             setSelectedItemId(null);
 
             Speak.speak('Produto deletado', {language: 'pt-br'});
+
+            fetchCarrinho();
         }
     };
 
@@ -275,7 +290,6 @@ const Carrinho = () => {
                             break;
                         case 2:
                             removeProduct();
-                            // addProduct();
                             break;
                         case 3:
                             listarCarrinho();
@@ -288,7 +302,7 @@ const Carrinho = () => {
                     }
                 }
                 else if (adicionar && productId)
-                {
+                {   
                     // let productId = 1;
                     switch (touchesDone) {
                         case 1:
@@ -298,7 +312,14 @@ const Carrinho = () => {
                             adicionarProduto(productId);
                             speak('Produto adicionado ao carrinho');
                             setAdicionar(false);
+                            fetchCarrinho();
+                            break;
+                        case 3:
+                            setAdicionar(false);
+                            break;
                         default:
+                            speak(`1 Toque: Descreve o produto descoberto;
+                                   2 Toques: Adiciona o produto ao carrinho.`)
                             break;
                     }
                 }
@@ -323,7 +344,7 @@ const Carrinho = () => {
 
     const adicionarProdutoAoCarrinho = async (produto: { quantity: number, productId: number, shoppingCartId: number }) => {
         try {
-            const response = await fetch('http://192.168.0.105:3000/shopping-cart-products', {
+            const response = await fetch('http://192.168.73.203:3000/shopping-cart-products', {
                 method: 'POST', // Método POST para enviar dados
                 headers: {
                     'Content-Type': 'application/json', // Define o tipo de conteúdo como JSON
@@ -361,11 +382,11 @@ const Carrinho = () => {
     const listarCarrinho = () => {
         speak("Produtos no seu carrinho");
         
-        const produtosArray = Object.values(produtos);
-        produtosArray.forEach((item, index) => {
-            index++;   
-            speak(`Produto ${index}: ${item.name}`);
-        });
+        carrinho.forEach((item, index) => {
+            const produto = produtos[item.productId];
+            speak(`Item ${index + 1}: ${produto.name}`);
+    });
+        
     }
 
     const speak = (text: string) => {
@@ -378,7 +399,6 @@ const Carrinho = () => {
                 activeOpacity={1}
                 onPress={countTouches}>
 
-                <ScrollView contentContainerStyle={{flexGrow: 1}} showsVerticalScrollIndicator={false}>
 
                     <View className="flex-1 items-center justify-center mt-12">
                         {carrinho.length > 0 && ! adicionar ? (
@@ -391,14 +411,23 @@ const Carrinho = () => {
                                         <View
                                             ref={(el) => (refs.current[item.id] = el)}
                                             key={item.id}
-                                            className={`border-solid border-2 m-2 w-40 rounded-lg pl-2 ${selectedItemId === item.id ? 'border-blue-500' : ''}`}
+                                            className={`border-solid border-4 m-4 w-48 rounded-lg p-4 ${selectedItemId === item.id ? 'border-blue-700' : 'border-gray-400'}`}
+                                            accessible={true}
+                                            accessibilityLabel={`Produto: ${produto.name}, Preço: ${produto.price}, Quantidade: ${item.quantity}`}
+                                            onAccessibilityAction={(event) => {
+                                                if (event.nativeEvent.actionName === "activate") {
+                                                    setSelectedItemId(item.id);
+                                                    Vibration.vibrate(100);  // Feedback ao toque,
+                                                }
+                                            }}
                                         >
-                                            <Text>Produto: {produto.name}</Text>
-                                            <Text>Preço: {produto.price}</Text>
-                                            <Text>Quantidade: {item.quantity}</Text>
+                                            <Text className="text-lg font-bold text-black" style={{ marginBottom: 4 }}>
+                                                Produto: {produto.name}
+                                            </Text>
+                                            <Text className="text-md text-gray-700" style={{ marginBottom: 4 }}>
+                                                Preço: R$ {produto.price}
+                                            </Text>
                                         </View>
-
-                                        <Text>Produto: {index}</Text>
                                     </>
                                 ) : (
                                     <Text key={item.id}>Carregando produto...</Text>
@@ -406,14 +435,21 @@ const Carrinho = () => {
                             })
                         ) : adicionar ? (
                             (() => {
-                                // let productId = 1;
                                 if (productId) {
                                     const produto = produtos[productId];
-
+                                    console.log('sdkfskd', produtos, produto, productId);
+                                    
                                     return produto ? (
                                         <View
-                                        className={`border-solid border-2 m-2 w-40 rounded-lg pl-2 border-red-500`}>
-                                            <Text>Produto encontrado: {produto.name}</Text>
+                                        key={productId}
+                                        className="border-2 border-red-500 rounded-lg m-2 p-4 w-44 shadow-lg bg-white items-center justify-center"
+                                        >
+                                        <Text className="text-center text-lg font-semibold text-gray-800">
+                                            Produto encontrado:
+                                        </Text>
+                                        <Text className="text-center text-base text-gray-600 mt-1">
+                                            {produto.name}
+                                        </Text>
                                         </View>
                                     ) : (
                                         <Text className="text-6xl">Produto não encontrado</Text>
@@ -426,7 +462,6 @@ const Carrinho = () => {
                             <Text className="text-6xl">Carrinho Vazio</Text>
                         )}
                     </View>
-                </ScrollView>
 
 
             </TouchableOpacity>
