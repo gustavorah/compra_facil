@@ -15,7 +15,7 @@ interface Product {
 interface CarrinhoItem {
     id: number;
     quantity: number;
-    product: Product;
+    product: Product;   
     productId: number;
     shoppingCartId: number;
     createAt: string;
@@ -33,117 +33,102 @@ const Carrinho = () => {
     const [productTag, setProductTag] = useState<{name: string, price: number} | null>(null);
     const [isNfcEnabled, setIsNfcEnabled] = useState<boolean>(false);
     const [isScanning, setIsScanning] = useState<boolean>(false);
+    const [tagContent, setTagContent] = useState<string | null>(null);
 
     const touchesRef = useRef(touches);
     const refs = useRef<{ [key: number]: any }>({});
 
-   // Inicializa o NFC
-   useEffect(() => {
-    const initNfc = async () => {
+    useEffect(() => {
+        const initNfc = async () => {
+            try {
+                const isSupported = await NfcManager.isSupported();
+                if (!isSupported) {
+                    console.warn("NFC not supported on this device");
+                    return;
+                }
+
+                await NfcManager.start();
+                setIsNfcEnabled(true);
+                console.log("NFC Manager initialized successfully");
+
+                // Register event listener
+                NfcManager.setEventListener(NfcEvents.DiscoverTag, (tag: any) => {
+                    console.log("Tag discovered:", tag);
+                    handleTagDiscovered(tag);
+                });
+
+                // Start scanning immediately
+                readNdefTag();
+
+            } catch (error) {
+                console.error("Error during NFC initialization:", error);
+                await cleanupNfc();
+            }
+        };
+
+        initNfc();
+
+        return () => {
+            cleanupNfc();
+        };
+    }, []);
+
+    const readNdefTag = async () => {
         try {
-            // First check if NFC is supported
-            const isSupported = await NfcManager.isSupported();
-            if (!isSupported) {
-                console.warn("NFC not supported on this device");
-                return;
-            }
-
-            // Then check if it's enabled
-            const isEnabled = await NfcManager.isEnabled();
-            if (!isEnabled) {
-                console.warn("NFC is not enabled");
-                return;
-            }
-
-            await NfcManager.start();
-            setIsNfcEnabled(true);
-            console.log("NFC Manager initialized successfully");
-
-            // Set up the event listener for tag discovery
-            NfcManager.setEventListener(NfcEvents.DiscoverTag, handleTagDiscovered);
+            setIsScanning(true);
             
-            // Start scanning
-            startScanning();
+            // Cancel any existing scanning session
+            await NfcManager.cancelTechnologyRequest();
 
+            // Start scanning loop
+            await NfcManager.registerTagEvent();
+            
+            console.log("Started scanning for NFC tags...");
         } catch (error) {
-            console.error("Error during NFC initialization:", error);
+            console.error("Error starting NFC scan:", error);
             await cleanupNfc();
         }
     };
 
-    initNfc();
+    const handleTagDiscovered = async (tag: any) => {
+        try {
+            if (!tag.ndefMessage || !tag.ndefMessage.length) {
+                console.warn("No NDEF message found on tag");
+                return;
+            }
+            
+            const ndefMessage = tag.ndefMessage[0];
+            if (!ndefMessage) {
+                console.warn("Invalid NDEF message format");
+                return;
+            }
+    
+            const text = Ndef.text.decodePayload(ndefMessage.payload);
+            console.log("Decoded tag content:", text);
 
-    // Cleanup when component unmounts
-    return () => {
-        cleanupNfc();
+            await fetchProdutoByTag(text);
+            setAdicionar(true);
+            speak(`Produto encontrado: ${productTag?.name || 'desconhecido'}, com valor de ${productTag?.price || 0} reais`);
+        } catch (error) {
+            readNdefTag();
+            console.error("Error processing NFC tag:", error);
+        }
     };
-}, []);
 
-const startScanning = async () => {
-    try {
-        setIsScanning(true);
-        // Cancel any existing scanning session
-        await NfcManager.cancelTechnologyRequest();
-        
-        // Start a new scanning session
-        await NfcManager.requestTechnology(NfcTech.Ndef);
-        
-        console.log("Started scanning for NFC tags...");
-    } catch (error) {
-        console.error("Error starting NFC scan:", error);
-        await cleanupNfc();
-    }
-};
-
-const handleTagDiscovered = async (tag: any) => {
-    try {
-        console.log("Raw tag data:", tag);
-        
-        if (!tag.ndefMessage || !tag.ndefMessage.length) {
-            console.warn("No NDEF message found on tag");
-            return;
+    const cleanupNfc = async () => {
+        try {
+            NfcManager.setEventListener(NfcEvents.DiscoverTag, null);
+            await NfcManager.unregisterTagEvent();
+            await NfcManager.cancelTechnologyRequest();
+            setIsScanning(false);
+        } catch (error) {
+            console.error("Error during NFC cleanup:", error);
         }
-
-        const ndefMessage = tag.ndefMessage[0];
-        if (!ndefMessage) {
-            console.warn("Invalid NDEF message format");
-            return;
-        }
-
-        const text = Ndef.text.decodePayload(ndefMessage.payload);
-        console.log("Decoded tag content:", text);
-
-        await fetchProdutoByTag(text);
-        setAdicionar(true);
-
-        speak(`Produto encontrado: ${productTag?.name || 'desconhecido'}, 
-               com valor de ${productTag?.price || 0} reais`);
-
-        Speak.speak(`1 toque: descreve o produto.
-                    2 toques: adiciona o produto para o carrinho.
-                    3 toques: não adiciona o produto.`);
-
-    } catch (error) {
-        console.error("Error processing NFC tag:", error);
-    } finally {
-        // Restart scanning after processing the tag
-        await startScanning();
-    }
-};
-
-const cleanupNfc = async () => {
-    try {
-        NfcManager.setEventListener(NfcEvents.DiscoverTag, null);
-        await NfcManager.cancelTechnologyRequest();
-        setIsScanning(false);
-    } catch (error) {
-        console.error("Error during NFC cleanup:", error);
-    }
-};
+    };
 
     const fetchCarrinho = async () => {
         try {
-            const response = await fetch('http://192.168.0.28:3000/shopping-cart-products');
+            const response = await fetch('http://192.168.0.105:3000/shopping-cart-products');
             
             if (!response.ok) {
                 throw new Error('Erro ao buscar produtos do carrinho');
@@ -166,27 +151,29 @@ const cleanupNfc = async () => {
 
     const fetchProdutoByTag = async (tag: any) => {
         try {
-            const response = await fetch(`http://192.168.0.28:3000/tags/${tag}/products`);
+            const response = await fetch(`http://192.168.0.105:3000/tags/${tag}/products`);
             if (!response.ok) {
                 throw new Error("Erro ao buscar o produto");
             }
 
-            const data: {name: string, price: number} = await response.json();
+            const data: {id: number, name: string, price: number} = await response.json();
             if (!data) {
                 throw new Error('Dados do produto não encontrados');
             }
 
             setProductTag(data);
+            setProductId(data.id)
 
         }
         catch (error: any) {
+            readNdefTag();
             console.error("Erro ao buscar o produto:", error.message);
         }
     }
     
     const fetchProduto = async (productId: number) => {
         try {
-            const response = await fetch(`http://192.168.0.28:3000/products/${productId}`);
+            const response = await fetch(`http://192.168.0.105:3000/products/${productId}`);
 
             if (!response.ok) {
                 throw new Error("Erro ao buscar o produto");
@@ -247,7 +234,7 @@ const cleanupNfc = async () => {
     const removeProduct = async () => {
         const productId = selectedItemId
         if (selectedItemId !== null && productId) {
-            const response = await fetch(`http://192.168.0.28:3000/shopping-cart-products/${productId}`, {
+            const response = await fetch(`http://192.168.0.105:3000/shopping-cart-products/${productId}`, {
                 method: 'DELETE', // Envia os dados do produto no corpo da requisição
             });
             if (!response.ok) {
@@ -336,7 +323,7 @@ const cleanupNfc = async () => {
 
     const adicionarProdutoAoCarrinho = async (produto: { quantity: number, productId: number, shoppingCartId: number }) => {
         try {
-            const response = await fetch('http://192.168.0.28:3000/shopping-cart-products', {
+            const response = await fetch('http://192.168.0.105:3000/shopping-cart-products', {
                 method: 'POST', // Método POST para enviar dados
                 headers: {
                     'Content-Type': 'application/json', // Define o tipo de conteúdo como JSON
@@ -387,25 +374,62 @@ const cleanupNfc = async () => {
 
     return (
         <TouchableOpacity 
-            style={{ flex: 1 }}
-            activeOpacity={1}
-            onPress={countTouches}
-        >
-            <ScrollView contentContainerStyle={{flexGrow: 1}} showsVerticalScrollIndicator={false}>
-                {/* Add NFC status indicators */}
-                <View className="p-4">
-                    <Text className="text-sm text-gray-600">
-                        NFC Status: {isNfcEnabled ? 'Enabled' : 'Disabled'}
-                    </Text>
-                    <Text className="text-sm text-gray-600">
-                        Scanning: {isScanning ? 'Active' : 'Inactive'}
-                    </Text>
-                </View>
+                style={{ flex: 1}}
+                activeOpacity={1}
+                onPress={countTouches}>
 
-                {/* Rest of your existing JSX */}
-                
-            </ScrollView>
-        </TouchableOpacity>
+                <ScrollView contentContainerStyle={{flexGrow: 1}} showsVerticalScrollIndicator={false}>
+
+                    <View className="flex-1 items-center justify-center mt-12">
+                        {carrinho.length > 0 && ! adicionar ? (
+                            carrinho.map((item, index) => {
+                                index++;
+                                const produto = produtos[item.productId];
+
+                                return produto ? (
+                                    <>
+                                        <View
+                                            ref={(el) => (refs.current[item.id] = el)}
+                                            key={item.id}
+                                            className={`border-solid border-2 m-2 w-40 rounded-lg pl-2 ${selectedItemId === item.id ? 'border-blue-500' : ''}`}
+                                        >
+                                            <Text>Produto: {produto.name}</Text>
+                                            <Text>Preço: {produto.price}</Text>
+                                            <Text>Quantidade: {item.quantity}</Text>
+                                        </View>
+
+                                        <Text>Produto: {index}</Text>
+                                    </>
+                                ) : (
+                                    <Text key={item.id}>Carregando produto...</Text>
+                                );
+                            })
+                        ) : adicionar ? (
+                            (() => {
+                                // let productId = 1;
+                                if (productId) {
+                                    const produto = produtos[productId];
+
+                                    return produto ? (
+                                        <View
+                                        className={`border-solid border-2 m-2 w-40 rounded-lg pl-2 border-red-500`}>
+                                            <Text>Produto encontrado: {produto.name}</Text>
+                                        </View>
+                                    ) : (
+                                        <Text className="text-6xl">Produto não encontrado</Text>
+                                    );
+                                }
+                                return null;
+                            })()
+
+                        ) : (
+                            <Text className="text-6xl">Carrinho Vazio</Text>
+                        )}
+                    </View>
+                </ScrollView>
+
+
+            </TouchableOpacity>
     );
 };
 
