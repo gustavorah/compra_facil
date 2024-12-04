@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, TouchableWithoutFeedback } from "react-native";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import * as Speak from "expo-speech";
@@ -143,7 +143,8 @@ const cleanupNfc = async () => {
 
     const fetchCarrinho = async () => {
         try {
-            const response = await fetch('http://192.168.0.28:3000/shopping-cart-products');
+            
+            const response = await fetch('http://177.44.248.73:3000/shopping-cart-products');
             
             if (!response.ok) {
                 throw new Error('Erro ao buscar produtos do carrinho');
@@ -161,12 +162,15 @@ const cleanupNfc = async () => {
         } catch (error: any) {
             console.error("Erro na requisição:", error.message); // Melhor mensagem de erro
             alert("Não foi possível carregar os itens do carrinho. Verifique sua conexão ou tente novamente mais tarde.");
+            
+            alert('http://177.44.248.73:3000/shopping-cart-products');
+            alert(error);
         }
     };
 
     const fetchProdutoByTag = async (tag: any) => {
         try {
-            const response = await fetch(`http://192.168.0.28:3000/tags/${tag}/products`);
+            const response = await fetch(`http://177.44.248.73:3000/tags/${tag}/products`);
             if (!response.ok) {
                 throw new Error("Erro ao buscar o produto");
             }
@@ -186,7 +190,7 @@ const cleanupNfc = async () => {
     
     const fetchProduto = async (productId: number) => {
         try {
-            const response = await fetch(`http://192.168.0.28:3000/products/${productId}`);
+            const response = await fetch(`http://177.44.248.73:3000/products/${productId}`);
 
             if (!response.ok) {
                 throw new Error("Erro ao buscar o produto");
@@ -247,7 +251,7 @@ const cleanupNfc = async () => {
     const removeProduct = async () => {
         const productId = selectedItemId
         if (selectedItemId !== null && productId) {
-            const response = await fetch(`http://192.168.0.28:3000/shopping-cart-products/${productId}`, {
+            const response = await fetch(`http://177.44.248.73:3000/shopping-cart-products/${productId}`, {
                 method: 'DELETE', // Envia os dados do produto no corpo da requisição
             });
             if (!response.ok) {
@@ -294,7 +298,7 @@ const cleanupNfc = async () => {
                             listarCarrinho();
                             break;
                         default:
-                            Speak.speak(`Comando não reconhecido. 1 toque: Seleciona o primeiro ou próximo carrinho; 
+                            Speak.speak(`Manual de uso. 1 toque: Seleciona o primeiro ou próximo carrinho; 
                                 2 toques: Deleta o produto do carrinho;
                                 3 toques: Descreve os produtos do carrinho`, {language: 'pt-br', rate: 2.0});
                             break;
@@ -336,7 +340,7 @@ const cleanupNfc = async () => {
 
     const adicionarProdutoAoCarrinho = async (produto: { quantity: number, productId: number, shoppingCartId: number }) => {
         try {
-            const response = await fetch('http://192.168.0.28:3000/shopping-cart-products', {
+            const response = await fetch('http://177.44.248.73:3000/shopping-cart-products', {
                 method: 'POST', // Método POST para enviar dados
                 headers: {
                     'Content-Type': 'application/json', // Define o tipo de conteúdo como JSON
@@ -379,7 +383,16 @@ const cleanupNfc = async () => {
             index++;   
             speak(`Produto ${index}: ${item.name}`);
         });
+
+        speak(`Valor total do carrinho: ${produtosArray.reduce((acc, item) => acc + parseFloat(item.price), 0)} reais`);
     }
+
+    const stopSpeaking = async () => {
+        const isSpeaking = await Speak.isSpeakingAsync();
+        if (isSpeaking) { // Verifica se está falando
+            Speak.stop();
+        }
+    };
 
     const speak = (text: string) => {
         Speak.speak(text, {language: 'pt-br'});
@@ -393,6 +406,7 @@ const cleanupNfc = async () => {
         >
             <ScrollView contentContainerStyle={{flexGrow: 1}} showsVerticalScrollIndicator={false}>
                 {/* Add NFC status indicators */}
+                <TouchableWithoutFeedback onPress={stopSpeaking}>
                 <View className="p-4">
                     <Text className="text-sm text-gray-600">
                         NFC Status: {isNfcEnabled ? 'Enabled' : 'Disabled'}
@@ -401,6 +415,8 @@ const cleanupNfc = async () => {
                         Scanning: {isScanning ? 'Active' : 'Inactive'}
                     </Text>
                 </View>
+                </TouchableWithoutFeedback>
+                
 
                 {/* Rest of your existing JSX */}
                 

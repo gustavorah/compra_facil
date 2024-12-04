@@ -109,7 +109,7 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.mobile"
+    namespace 'compra.facil'
     defaultConfig {
         applicationId 'compra.facil'
         minSdkVersion rootProject.ext.minSdkVersion
