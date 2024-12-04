@@ -73,6 +73,7 @@ const Carrinho = () => {
         };
     }, []);
 
+
     const readNdefTag = async () => {
         try {
             setIsScanning(true);
@@ -388,8 +389,10 @@ const Carrinho = () => {
         carrinho.forEach((item, index) => {
             const produto = produtos[item.productId];
             speak(`Item ${index + 1}: ${produto.name}`);
-    });
-        
+
+            speak(`Valor total: ${carrinho.reduce(
+                (acc, item) => acc + Number(produtos[item.productId].price) * item.quantity, 0)}`);
+        });   
     }
 
     const speak = (text: string) => {
@@ -402,7 +405,7 @@ const Carrinho = () => {
                 activeOpacity={1}
                 onPress={countTouches}>
 
-
+    
                     <View className="flex-1 items-center justify-center mt-12">
                         {carrinho.length > 0 && ! adicionar ? (
                             carrinho.map((item, index) => {
