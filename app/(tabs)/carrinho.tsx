@@ -148,9 +148,7 @@ const Carrinho = () => {
                         
             setCarrinho(data);
             
-            data.forEach(async (item) => {
-                await fetchProduto(item.productId);
-            });
+            await fetchProduto()
         } catch (error: any) {
             console.error("Erro na requisição:", error.message); // Melhor mensagem de erro
             alert("Não foi possível carregar os itens do carrinho. Verifique sua conexão ou tente novamente mais tarde.");
@@ -184,20 +182,20 @@ const Carrinho = () => {
         }
     }
     
-    const fetchProduto = async (productId: number) => {
+    const fetchProduto = async () => {
         try {
-            const response = await fetch(`http://177.44.248.73:3000/products/${productId}`);
+            const response = await fetch(`http://177.44.248.73:3000/products`);
 
             if (!response.ok) {
                 throw new Error("Erro ao buscar o produto");
             }
     
-            const data: Product = await response.json();
+            const data: Product[] = await response.json();
             if (!data) {
                 throw new Error('Dados do produto não encontrados');
             }
 
-            setProdutos(prevState => ({ ...prevState, [productId]: data }));
+            setProdutos(data);
         } catch (error: any) {
             console.error("Erro ao buscar o produto:", error.message);
         }
@@ -220,12 +218,12 @@ const Carrinho = () => {
             if (selectedItemId === null && carrinho.length > 0) {
                 if (selectedItemId === null)
                 {
-                    speakSelectedProduct(produtos[carrinho[0].productId]);
+                    speakSelectedProduct(produtos.find((produto) => produto.id === carrinho[0].productId) || {id: 0, name: 'Produto não encontrado', price: '0'});
                 }
                 setSelectedItemId(carrinho[0]?.id || null);
                 if (selectedItemId)
                 {
-                    speakSelectedProduct(produtos[carrinho[0].productId]);
+                    speakSelectedProduct(produtos.find((produto) => produto.id === carrinho[0].productId) || {id: 0, name: 'Produto não encontrado', price: '0'});
                 }
             } 
             else {
@@ -235,7 +233,7 @@ const Carrinho = () => {
 
                 if (selectedItemId)
                 {
-                    speakSelectedProduct(produtos[carrinho[nextIndex].productId]);
+                    speakSelectedProduct(produtos.find((produto) => produto.id === carrinho[nextIndex].productId) || {id: 0, name: 'Produto não encontrado', price: '0'});
                 }
             }
         }
@@ -310,7 +308,7 @@ const Carrinho = () => {
                     // let productId = 1;
                     switch (touchesDone) {
                         case 1:
-                            speakSelectedProduct(produtos[productId]);
+                            speakSelectedProduct(produtos.find((produto) => produto.id === productId) || {id: 0, name: 'Produto não encontrado', price: '0'});
                             break;
                         case 2:
                             adicionarProduto(productId);
@@ -337,11 +335,13 @@ const Carrinho = () => {
 
     const adicionarProduto = (productId: number) => {
         if (productId) {
-            const produtoSelecionado = produtos[productId];
+            const produtoSelecionado = produtos.find((produto) => produto.id === productId);
             if (produtoSelecionado) {
                 adicionarProdutoAoCarrinho({quantity: 1, productId: productId, shoppingCartId: 1});
                 console.log(`Produto adicionado ao carrinho: ${produtoSelecionado.name}`);
-                fetchCarrinho();
+                setTimeout(() => {
+                    fetchCarrinho();
+                }, 300); 
             }
         }
     };
@@ -386,13 +386,20 @@ const Carrinho = () => {
     const listarCarrinho = () => {
         speak("Produtos no seu carrinho");
         
-        carrinho.forEach((item, index) => {
-            const produto = produtos[item.productId];
-            speak(`Item ${index + 1}: ${produto.name}`);
+        carrinho.forEach((item) => {
+            const produto = produtos.find((produto) => produto.id === item.productId);
 
-            speak(`Valor total: ${carrinho.reduce(
-                (acc, item) => acc + Number(produtos[item.productId].price) * item.quantity, 0)}`);
+            if (!produto) {
+                return;
+            }
+
+            speak(`${produto.name}. Quantidade: ${item.quantity}. Preço: ${produto.price}`);
+
+            
         });   
+
+        /* speak(`Valor total: ${carrinho.reduce(
+            (acc, item) => acc + Number(produtos[item.productId].price) * item.quantity, 0)}`); */
     }
 
     const speak = (text: string) => {
@@ -401,48 +408,55 @@ const Carrinho = () => {
 
     return (
         <TouchableOpacity 
-                style={{ flex: 1}}
-                activeOpacity={1}
-                onPress={countTouches}>
-
+            style={{ flex: 1}}
+            activeOpacity={1}
+            onPress={countTouches}>
+            <View className="flex-1 items-center justify-center mt-12">
+                {carrinho.length > 0 && !adicionar ? (
+                    <ScrollView 
+                        contentContainerStyle={{ 
+                            alignItems: 'center', 
+                            paddingVertical: 10 
+                        }}
+                        style={{ 
+                            maxHeight: 500, // Altura máxima antes de rolar
+                            width: '100%' 
+                        }}
+                        showsVerticalScrollIndicator={true} // Mostra a barra de rolagem
+                    >
+                        {carrinho.map((item, index) => {
+                            const produto = produtos.find((produto) => produto.id === item.productId);
     
-                    <View className="flex-1 items-center justify-center mt-12">
-                        {carrinho.length > 0 && ! adicionar ? (
-                            carrinho.map((item, index) => {
-                                index++;
-                                const produto = produtos[item.productId];
-
-                                return produto ? (
-                                    <>
-                                        <View
-                                            ref={(el) => (refs.current[item.id] = el)}
-                                            key={item.id}
-                                            className={`border-solid border-4 m-4 w-48 rounded-lg p-4 ${selectedItemId === item.id ? 'border-blue-700' : 'border-gray-400'}`}
-                                            accessible={true}
-                                            accessibilityLabel={`Produto: ${produto.name}, Preço: ${produto.price}, Quantidade: ${item.quantity}`}
-                                            onAccessibilityAction={(event) => {
-                                                if (event.nativeEvent.actionName === "activate") {
-                                                    setSelectedItemId(item.id);
-                                                    Vibration.vibrate(100);  // Feedback ao toque,
-                                                }
-                                            }}
-                                        >
-                                            <Text className="text-lg font-bold text-black" style={{ marginBottom: 4 }}>
-                                                Produto: {produto.name}
-                                            </Text>
-                                            <Text className="text-md text-gray-700" style={{ marginBottom: 4 }}>
-                                                Preço: R$ {produto.price}
-                                            </Text>
-                                        </View>
-                                    </>
-                                ) : (
-                                    <Text key={item.id}>Carregando produto...</Text>
-                                );
-                            })
-                        ) : adicionar ? (
+                            return produto ? (
+                                <View
+                                    ref={(el) => (refs.current[item.id] = el)}
+                                    key={item.id}
+                                    className={`border-solid border-4 m-4 w-48 rounded-lg p-4 ${selectedItemId === item.id ? 'border-blue-700' : 'border-gray-400'}`}
+                                    accessible={true}
+                                    accessibilityLabel={`Produto: ${produto.name}, Preço: ${produto.price}, Quantidade: ${item.quantity}`}
+                                    onAccessibilityAction={(event) => {
+                                        if (event.nativeEvent.actionName === "activate") {
+                                            setSelectedItemId(item.id);
+                                            Vibration.vibrate(100);
+                                        }
+                                    }}
+                                >
+                                    <Text className="text-lg font-bold text-black" style={{ marginBottom: 4 }}>
+                                        Produto: {produto.name}
+                                    </Text>
+                                    <Text className="text-md text-gray-700" style={{ marginBottom: 4 }}>
+                                        Preço: R$ {produto.price}
+                                    </Text>
+                                </View>
+                            ) : (
+                                <Text key={item.id}>Carregando produto...</Text>
+                            );
+                        })}
+                    </ScrollView>
+                ) : adicionar ? (
                             (() => {
                                 if (productId) {
-                                    const produto = produtos[productId];
+                                    const produto = produtos.find((produto) => produto.id === productId);
                                     console.log('sdkfskd', produtos, produto, productId);
                                     
                                     return produto ? (
