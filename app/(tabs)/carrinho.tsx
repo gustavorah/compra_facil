@@ -135,7 +135,7 @@ const Carrinho = () => {
     const fetchCarrinho = async () => {
         try {
             
-            const response = await fetch('http://177.44.248.73:3000/shopping-cart-products');
+            const response = await fetch('http://177.44.248.84:3000/shopping-cart-products');
             
             if (!response.ok) {
                 throw new Error('Erro ao buscar produtos do carrinho');
@@ -153,14 +153,14 @@ const Carrinho = () => {
             console.error("Erro na requisição:", error.message); // Melhor mensagem de erro
             alert("Não foi possível carregar os itens do carrinho. Verifique sua conexão ou tente novamente mais tarde.");
             
-            alert('http://177.44.248.73:3000/shopping-cart-products');
+            alert('http://177.44.248.84:3000/shopping-cart-products');
             alert(error);
         }
     };
 
     const fetchProdutoByTag = async (tag: any) => {
         try {
-            const response = await fetch(`http://177.44.248.73:3000/tags/${tag}/products`);
+            const response = await fetch(`http://177.44.248.84:3000/tags/${tag}/products`);
             if (!response.ok) {
                 throw new Error("Erro ao buscar o produto");
             }
@@ -184,7 +184,7 @@ const Carrinho = () => {
     
     const fetchProduto = async () => {
         try {
-            const response = await fetch(`http://177.44.248.73:3000/products`);
+            const response = await fetch(`http://177.44.248.84:3000/products`);
 
             if (!response.ok) {
                 throw new Error("Erro ao buscar o produto");
@@ -249,7 +249,7 @@ const Carrinho = () => {
     const removeProduct = async () => {
         const productId = selectedItemId
         if (selectedItemId !== null && productId) {
-            const response = await fetch(`http://177.44.248.73:3000/shopping-cart-products/${productId}`, {
+            const response = await fetch(`http://177.44.248.84:3000/shopping-cart-products/${productId}`, {
                 method: 'DELETE', // Envia os dados do produto no corpo da requisição
             });
             if (!response.ok) {
@@ -348,7 +348,7 @@ const Carrinho = () => {
 
     const adicionarProdutoAoCarrinho = async (produto: { quantity: number, productId: number, shoppingCartId: number }) => {
         try {
-            const response = await fetch('http://177.44.248.73:3000/shopping-cart-products', {
+            const response = await fetch('http://177.44.248.84:3000/shopping-cart-products', {
                 method: 'POST', // Método POST para enviar dados
                 headers: {
                     'Content-Type': 'application/json', // Define o tipo de conteúdo como JSON
